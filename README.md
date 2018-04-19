@@ -11,4 +11,6 @@ Their positions can be rendered on an overlay, which can be scaled using mouse w
 Snakes and food and prey are also rendered.
 Although I have not put this over the websocket nicely yet due to a lack of way to know how to not update/overwrite games latest info... And it would chew up more data.
 
+![Screenshot](https://i.imgur.com/P6Vq8he.png)
+
 ![Screenshot](https://i.imgur.com/mafk6rC.jpg)

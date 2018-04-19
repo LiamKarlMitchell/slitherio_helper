@@ -8,14 +8,14 @@
 // @homepageURL
 // @author      MegaByte
 // @description Play with friends in Slither.io
-// @require     https://code.jquery.com/jquery-git.min.js
+// @require     http://code.jquery.com/jquery-git.min.js
 // @match        http://slither.io
 // ==/UserScript==
 
 // Note: You will have to run your own node.js server obviously, I'm using this on lan.
 var MY_WEBSOCKET = "ws://192.168.1.10:444/echo";
 
-var SEND_UPDATE_MS = 250;
+var SEND_UPDATE_MS = 100;
 var RECV_UPDATES_TTL = 5000*100;
 
 // Auto connect allows you to play on same server as a friend.
@@ -25,8 +25,11 @@ var autoConnect_ip = '139.99.130.166';
 var autoConnect_port = 444;
 
 
-var render_grid = false;
-
+var render_food = false;
+var render_prey = false;
+var render_snakes = true;
+var render_grid = true;
+var render_tails = true;
 
 (function() {
     'use strict';
@@ -124,6 +127,9 @@ var render_grid = false;
             overlayCtx.lineWidth = 1;
 
             if (render_grid) {
+                overlayCtx.fillStyle = '#FFFFFF';
+                overlayCtx.font = "10px Arial";
+
                 var p = 0;
                 var d = 0;
                 for (var i = 0; i<gameWidth; i=i+gameSectorWidth) {
@@ -137,15 +143,14 @@ var render_grid = false;
                         if (j === 0) {
                             overlayCtx.moveTo(x,0);
                             overlayCtx.lineTo(x,gameHeight*scale);
-                            overlayCtx.stroke();
+                            //overlayCtx.stroke();
                         }
 
                         overlayCtx.moveTo(0,u);
                         overlayCtx.lineTo(gameWidth*scale,u);
-                        overlayCtx.stroke();
+                        //overlayCtx.stroke();
 
-                        overlayCtx.fillStyle = '#FFFFFF';
-                        overlayCtx.font = "10px Arial";
+
                         overlayCtx.fillText(xCoords[p]+yCoords[d],x + 3, u - 3);
 
                         d++;
@@ -154,44 +159,55 @@ var render_grid = false;
                     p++;
                 }
 
+                overlayCtx.stroke();
                 ctx.lineWidth = 1;
             }
 
+            overlayCtx.globalCompositeOperation = "lighten";
 
-            for (var i=0; i<foods.length; i++) {
 
-                var food = foods[i];
-                if (!food) {
-                    continue;
+            if (render_food) {
+                for (var i=0; i<foods.length; i++) {
+
+                    var food = foods[i];
+                    if (!food) {
+                        continue;
+                    }
+
+                    overlayCtx.strokeStyle = 'rgba(255,100,100,0.25)';
+                    overlayCtx.fillStyle = 'rgba(255,100,100,0.25)';
+
+                    overlayCtx.beginPath();
+                    overlayCtx.arc(food.xx * scaleWidth * scale, food.yy * scaleHeight * scale, food.rad * 2, 0, 2 * Math.PI);
+                    overlayCtx.stroke();
+                    overlayCtx.fill();
+                    overlayCtx.closePath();
                 }
-
-                overlayCtx.strokeStyle = 'rgba(255,0,0,0.01)';
-                overlayCtx.fillStyle = 'rgba(255,0,0,0.01)';
-
-                overlayCtx.beginPath();
-                overlayCtx.arc(food.xx * scaleWidth * scale, food.yy * scaleHeight * scale, food.rad, 0, 2 * Math.PI);
-                overlayCtx.stroke();
-                overlayCtx.fill();
-                overlayCtx.closePath();
             }
 
-            for (var i=0; i<preys.length; i++) {
+            if (render_prey) {
+                for (var i=0; i<preys.length; i++) {
 
-                var prey = preys[i];
-                if (!prey) {
-                    continue;
+                    var prey = preys[i];
+                    if (!prey) {
+                        continue;
+                    }
+
+                    overlayCtx.strokeStyle = prey.cs;
+                    overlayCtx.fillStyle = prey.cs;
+
+                    overlayCtx.beginPath();
+                    overlayCtx.arc(prey.xx * scaleWidth * scale, prey.yy * scaleHeight * scale, prey.rad * 2, 0, 2 * Math.PI);
+                    overlayCtx.stroke();
+                    overlayCtx.fill();
+                    overlayCtx.closePath();
                 }
-
-                overlayCtx.strokeStyle = prey.cs;
-                overlayCtx.fillStyle = prey.cs;
-
-                overlayCtx.beginPath();
-                overlayCtx.arc(prey.xx * scaleWidth * scale, prey.yy * scaleHeight * scale, prey.rad, 0, 2 * Math.PI);
-                overlayCtx.stroke();
-                overlayCtx.fill();
-                overlayCtx.closePath();
             }
 
+            overlayCtx.globalCompositeOperation = "source-over";
+
+
+            if (render_snakes){
             for (var i=0; i<snakes.length; i++) {
 
                 var _snake = snakes[i];
@@ -216,13 +232,15 @@ var render_grid = false;
 
                 var snakeRadius = _snake.sc;
 
-                for (var b = 0; b<_snake.pts.length; b++) {
-                    var pt = _snake.pts[b];
-                    overlayCtx.beginPath();
-                    overlayCtx.arc(pt.xx * scaleWidth * scale, pt.yy * scaleHeight * scale, snakeRadius, 0, 2 * Math.PI);
-                    overlayCtx.stroke();
-                    overlayCtx.fill();
-                    overlayCtx.closePath();
+                if (render_tails) {
+                    for (var b = 0; b<_snake.pts.length; b++) {
+                        var pt = _snake.pts[b];
+                        overlayCtx.beginPath();
+                        overlayCtx.arc(pt.xx * scaleWidth * scale, pt.yy * scaleHeight * scale, snakeRadius, 0, 2 * Math.PI);
+                        overlayCtx.stroke();
+                        overlayCtx.fill();
+                        overlayCtx.closePath();
+                    }
                 }
 
                 overlayCtx.beginPath();
@@ -232,6 +250,7 @@ var render_grid = false;
                 overlayCtx.closePath();
 
                 overlayCtx.lineWidth = 1;
+            }
             }
 
             Object.keys(renderInfos).forEach(function (key) {
@@ -260,7 +279,7 @@ var render_grid = false;
 
                 var snakeRadius = message.sc || 2;
 
-                if (message.pts) {
+                if (render_tails && message.pts) {
                     for (var b = 0; b<message.pts.length; b++) {
                         var pt = message.pts[b];
                         overlayCtx.beginPath();
